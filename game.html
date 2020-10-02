@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<head>
+<style>
+#b-img{display:none;}
+#l-img{display:none;}
+#start-img{display:none;}
+#win-img{display:none;}
+
+</style>
+</head>
+<body>
+<img src='./img/start.jpg' id='start-img'>
+<img src='./img/win.jpg' id='win-img'>
+<img src='./img/heart.png' id='l-img'>
+<img src='./img/brick.png' id='b-img'>
+
+<canvas style='border:1px solid#000'   id='c'  width=800 height=500></canvas>
+<script>
+
+class Player{
+    constructor(main){
+      this.main=main
+      this.screenWidth=main.screenWidth;
+      this.screenHeight=main.screenHeight;
+      this.width=150;
+      this.height=15;
+      this.speed={x:0,  y:0}
+      this.maxSpeed=6;
+      this.position={
+	      x: this.screenWidth/2 - this.width/2,
+	      y:this.screenHeight-this.height-10
+	    }
+    }
+
+    update(){
+      this.position.x += this.speed.x
+      if(this.screenWidth-this.width < this.position.x){
+	      this.position.x =this.screenWidth-this.width
+      }
+      else if(this.position.x<0){
+        this.position.x=0
+      }
+    }
+
+    draw(ctx){  
+      ctx.fillStyle='#00f';
+      ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+    }
+
+      right(){
+        this.speed.x= this.maxSpeed;
+      }
+      left(){
+        this.speed.x = -this.maxSpeed;
+      }
+      stop(){
+        this.speed.x=0;
+      }
+}
+
+class KeyHandle{
+    constructor(player, m){
+      document.addEventListener('keydown', function(e){
+        switch(e.which){
+          case 37:
+            player.left()
+            break;
+	        case 39:
+	          player.right()
+            break;
+	        case 27:
+	          m.toggle()
+            break;
+	        case 13:
+	          m.start()
+            break;
+        }
+      })
+
+      document.addEventListener('keyup', function(){
+        player.stop()
+      })
+  }
+}
+
+function collision(ball, gobj){
+  let bottomBall= ball.position.y+ball.size;
+	let topBall= ball.position.y;
+  let leftBall= ball.position.x
+  let rightBall= ball.position.x + ball.size
+  let topObj= gobj.position.y;
+	let bottomObj= gobj.position.y + gobj.height;
+  let leftObj= gobj.position.x;
+  let rightObj= gobj.position.x + gobj.width;
+  
+	if(bottomBall > topObj && rightBall > leftObj && leftBall < rightObj && bottomObj > topBall){
+	  return true
+	}else{
+	  return false
+                  }
+}
+
+class Ball{
+  constructor(main){
+    this.main=main
+    this.screenWidth=main.screenWidth;
+    this.screenHeight=main.screenHeight;
+    this.size=6;
+    this.width=2
+    this.reset()
+  }
+  reset(){
+    this.position={
+	    x:50,
+	    y:410
+	  }
+    this.speed={x:4, y:-5}
+  }
+
+  draw(ctx){
+    ctx.fillStyle='red'
+    ctx.beginPath()
+    ctx.arc(this.position.x, this.position.y, this.size,0, 2*Math.PI)
+    ctx.fill()
+  }
+
+  update(){
+	this.position.x += this.speed.x
+	this.position.y += this.speed.y	
+	if( this.position.y + this.size < 0){
+	  this.speed.y =- this.speed.y
+	    
+	}
+  else if(this.position.x < 0 || this.position.x  +this.size > this.screenWidth){
+	  this.speed.x =- this.speed.x
+	}
+	
+
+  if(this.position.y > this.screenHeight-this.size){
+	  this.main.lives--
+	  this.reset()
+  }
+	if (collision(this, this.main.player)){
+	  this.speed.y =- this.speed.y
+	}
+  }
+}
+
+class Brick{
+  constructor(main, position){
+    this.main = main
+    this.img = document.getElementById('b-img')
+    this.width = 80;
+    this.height = 40;
+    this.position = position
+    this.forDelete = false
+  }
+
+  draw(ctx){
+    ctx.drawImage(this.img, this.position.x, this.position.y, this.width, this.height)
+  }
+
+  update(){
+    if(collision(this.main.ball, this)){
+	    this.main.ball.speed.y =- this.main.ball.speed.y
+  	  this.main.numScore += 10
+	    this.forDelete = true
+    }
+  }
+ 
+}
+
+const SCREEN_WIDTH=800;
+const SCREEN_HEIGHT=500;
+
+let c = document.getElementById('c');
+let ctx = c.getContext('2d');
+
+let level_1 = [
+[0,1,0,1,0,1,0,1,0,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_2 = [
+[0,0,1,1,0,0,1,1,0,0],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_3 = [
+[1,1,1,0,0,0,0,0,0,0],
+[1,1,1,1,1,1,0,0,0,0],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_4 = [
+[0,0,0,1,1,1,1,0,0,0],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_5 = [
+[1,1,0,0,0,5,0,0,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_6 = [
+[0,1,0,0,0,0,0,0,0,1],
+[0,1,1,1,0,0,0,1,1,1],
+[1,1,1,1,0,0,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_7 = [
+[0,1,0,0,1,1,0,0,0,0],
+[1,1,0,0,1,1,1,0,0,1],
+[1,1,0,0,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_8 = [
+[0,0,1,1,0,0,0,0,0,0],
+[1,1,1,1,0,0,1,1,1,0],
+[1,1,1,1,0,0,1,1,1,0],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_9 = [
+[1,0,0,0,1,0,0,0,0,0],
+[1,1,0,1,1,1,0,0,0,1],
+[1,1,0,1,1,1,0,0,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+let level_10 =[
+[0,0,1,1,0,0,0,1,0,1],
+[1,1,1,1,1,0,0,1,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1]
+]
+
+
+function buildLevel(main,level){
+let bricks = [];
+  level.forEach((row,r_index)=>{
+    row.forEach((brick,b_index)=>{
+      if(brick===1){
+        bricks.push(new Brick(main, {x:80 * b_index, y:80 + 40 * r_index}))
+      }
+	  })
+  })
+  return bricks;
+}
+
+const STATES={
+  PAUSED:0,
+  RUNNING:1,
+  GAMEOVER:2,
+  MENU:3,
+  NEWLEVEL:4,
+  WIN:5
+}
+
+class Main{
+  constructor(screenWidth, screenHeight){
+    this.screenWidth = screenWidth;
+    this.screenHeight = screenHeight
+    this.states = STATES.MENU
+    this.lives = 3
+    this.numScore = 0
+    this.limg = document.getElementById('l-img')
+    this.startImg = document.getElementById('start-img')
+    this.winImg = document.getElementById('win-img')
+    this.player = new Player(this)
+    this.ball = new Ball(this)
+    this.handler = new KeyHandle(this.player, this)
+    this.objects = []
+    this.bricksPattern = []
+    this.levels = [level_1, level_2, level_3, level_4, level_5, level_6, level_7, level_8, level_9, level_10 ]
+    this.currentLevel = 0
+  }
+  start(){
+    if(this.states !== STATES.MENU && this.states !== STATES.NEWLEVEL ) return;
+
+    this.bricksPattern = buildLevel(main,this.levels[this.currentLevel])
+       
+
+    this.objects =[this.player, this.ball]
+    this.ball.reset()
+
+    this.states=STATES.RUNNING
+     
+  }
+
+  update(){
+      
+    if(this.lives===0) this.states=STATES.GAMEOVER
+    if(this.states===STATES.PAUSED || this.states===STATES.MENU || this.states===STATES.GAMEOVER || this.states===STATES.WIN) return;
+            
+    [...this.objects, ...this.bricksPattern].forEach(obj=>obj.update())
+    this.bricksPattern =this.bricksPattern.filter(brick => !brick.forDelete)
+          
+
+    if(this.lives===0) this.states=STATES.GAMEOVER
+    if(this.bricksPattern.length===0){
+      this.currentLevel++
+      this.lives = 3
+      this.ball.speed.x += 0.3
+      this.ball.speed.y += 0.2
+
+      if(this.currentLevel > this.levels.length-1){
+        this.states=STATES.WIN
+      }else{
+        this.states=STATES.NEWLEVEL
+        this.start()
+      }
+    }
+  }
+
+  draw(ctx){
+	 
+    [...this.objects, ...this.bricksPattern].forEach(obj => obj.draw(ctx))
+
+    ctx.font='22px Arial'
+    ctx.fillStyle='gold'
+    ctx.fillText('Score : ', 640,30)
+    ctx.fillText(this.numScore, 720, 30)
+
+    ctx.fillStyle='#846387'
+    ctx.fillText('Levels : ', 360,30)
+    ctx.fillText(this.currentLevel+1, 420, 30)
+    ctx.fillStyle='#f00';
+    ctx.drawImage(this.limg, 80,10,30,26)
+    ctx.fillText(this.lives, 140,30)
+  
+
+
+    if(this.states===STATES.PAUSED){
+      ctx.fillStyle='rgba(0,0,0,0.5)'
+      ctx.fillRect(0,0,this.screenWidth, this.screenHeight)
+      ctx.font='30px Arial'
+      ctx.textAlign='center';
+      ctx.fillStyle='#fff';
+      ctx.fillText('PAUSED', this.screenWidth/2, this.screenHeight/2);
+    }
+
+    if(this.states===STATES.GAMEOVER){
+ 
+      ctx.fillStyle='rgba(0,0,0,1)'
+      ctx.fillRect(0,0,this.screenWidth, this.screenHeight)
+      ctx.font='45px Arial'
+      ctx.textAlign='center';
+      ctx.fillStyle='#fff';
+      ctx.fillText('GAME OVER', this.screenWidth/2, this.screenHeight/2);
+    }
+
+    if(this.states===STATES.MENU){
+           
+      ctx.fillStyle='rgba(0,0,0,1)'
+      ctx.fillRect(0,0,this.screenWidth, this.screenHeight)
+      ctx.font='30px Arial'
+      ctx.textAlign='center';
+      ctx.fillStyle='#fff';
+      ctx.drawImage(this.startImg,290,90)
+      ctx.fillText('Press ENTER to start', this.screenWidth/2, this.screenHeight/4*3);
+    }
+
+    if(this.states===STATES.WIN){
+           
+      ctx.fillStyle='rgba(0,0,0,1)'
+      ctx.fillRect(0,0,this.screenWidth, this.screenHeight)
+      ctx.font='60px Arial'
+      ctx.textAlign='center';
+      ctx.fillStyle='#fff';
+      ctx.drawImage(this.winImg,270,30, 250, 280)
+      ctx.fillText('YOU WIN!', this.screenWidth/2, this.screenHeight/4*3);
+    }
+  }
+
+  toggle(){
+    if(this.states===STATES.PAUSED){
+      this.states=STATES.RUNNING
+    }else{
+      this.states=STATES.PAUSED
+    }
+  }
+}
+
+let main =new Main(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+function loop(){
+  ctx.clearRect(0,0,SCREEN_WIDTH, SCREEN_HEIGHT)
+  main.update()
+  main.draw(ctx)
+  requestAnimationFrame(loop)
+}
+requestAnimationFrame(loop)
+
+</script>
+</body>
+</html>
